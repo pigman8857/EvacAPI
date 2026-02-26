@@ -8,8 +8,8 @@ public class EvacuationProfile : Profile
 {
   public EvacuationProfile()
   {
-    CreateMap<AddEvacuationZone, EvacuationZone>();
-    CreateMap<AddVehicle, Vehicle>();
+    CreateMap<AddEvacuationZoneDto, EvacuationZone>();
+    CreateMap<AddVehicleDto, Vehicle>();
     // // You can also map from Entity to DTO
     // CreateMap<ProductEntity, ProductDto>();
   }

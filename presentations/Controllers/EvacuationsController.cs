@@ -20,14 +20,14 @@ namespace evacPlanMoni.presentations.Controllers
     }
 
     [HttpPost("/api/evacuation-zones")]
-    public IActionResult AddZone([FromBody] AddEvacuationZone zone)
+    public IActionResult AddZone([FromBody] AddEvacuationZoneDto zone)
     {
       _service.AddZone(_mapper.Map<EvacuationZone>(zone));
       return Ok(new { Message = "Zone added successfully" });
     }
 
     [HttpPost("/api/vehicles")]
-    public IActionResult AddVehicle([FromBody] AddVehicle vehicle)
+    public IActionResult AddVehicle([FromBody] AddVehicleDto vehicle)
     {
       _service.AddVehicle(_mapper.Map<Vehicle>(vehicle));
       return Ok(new { Message = "Vehicle added successfully" });
