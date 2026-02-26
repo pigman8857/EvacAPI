@@ -9,17 +9,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Use the Infrastructure Extension Method ---
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-builder.Services.AddScoped<IEvacuationDataRepository, InMemoryEvacuationDataRepository>();
 // Scoped means a new instance of the repository is created per HTTP request.
+builder.Services.AddScoped<IEvacuationDataRepository, InMemoryEvacuationDataRepository>();
 builder.Services.AddScoped<IEvacuationStatusRepository, RedisEvacuationStatusRepository>();
 // Add services to the container.
 builder.Services.AddScoped<IEvacuationService, EvacuationService>();
 
-
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-
 
 var app = builder.Build();
 
