@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # --- PostgreSQL Database ---
+  postgres:
+    image: postgres:15-alpine
+    container_name: evacuation_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: EvacuationDb
+    ports:
+      - "5432:5432" # Maps the container port to your local machine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Keeps your data safe if the container restarts
+    restart: unless-stopped
+
+  # --- Redis Cache ---
+  redis:
+    image: redis:7-alpine
+    container_name: evacuation_redis
+    ports:
+      - "6379:6379" # Maps the container port to your local machine
+    volumes:
+      - redis_data:/data # Persists your Redis data
+    restart: unless-stopped
+
+# Define the named volumes used above for data persistence
+volumes:
+  postgres_data:
+  redis_data:
