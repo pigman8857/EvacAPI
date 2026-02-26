@@ -10,9 +10,9 @@ services:
       POSTGRES_PASSWORD: yourpassword
       POSTGRES_DB: EvacuationDb
     ports:
-      - "5432:5432" # Maps the container port to your local machine
+      - "5432:5432" # Maps the container port to local machine
     volumes:
-      - postgres_data:/var/lib/postgresql/data # Keeps your data safe if the container restarts
+      - postgres_data:/var/lib/postgresql/data # Keeps data safe if the container restarts
     restart: unless-stopped
 
   # --- Redis Cache ---
@@ -20,9 +20,9 @@ services:
     image: redis:7-alpine
     container_name: evacuation_redis
     ports:
-      - "6379:6379" # Maps the container port to your local machine
+      - "6379:6379" # Maps the container port to local machine
     volumes:
-      - redis_data:/data # Persists your Redis data
+      - redis_data:/data # Persists data
     restart: unless-stopped
 
 # Define the named volumes used above for data persistence
