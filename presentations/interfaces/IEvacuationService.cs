@@ -1,6 +1,6 @@
 using evacPlanMoni.entities;
 
-namespace evacPlanMoni.presentation.Services
+namespace evacPlanMoni.presentations.Services
 {
   public interface IEvacuationService
   {

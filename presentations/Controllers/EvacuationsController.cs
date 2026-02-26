@@ -1,5 +1,7 @@
-using evacPlanMoni.apps.Services;
+using AutoMapper;
 using evacPlanMoni.entities;
+using evacPlanMoni.presentations.dtos;
+using evacPlanMoni.presentations.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace evacPlanMoni.presentations.Controllers
@@ -8,24 +10,26 @@ namespace evacPlanMoni.presentations.Controllers
   [Route("api/[controller]")]
   public class EvacuationsController : ControllerBase
   {
-    private readonly EvacuationService _service;
+    private readonly IEvacuationService _service;
+    private readonly IMapper _mapper;
 
-    public EvacuationsController(EvacuationService service)
+    public EvacuationsController(IMapper mapper, IEvacuationService service)
     {
+      _mapper = mapper;
       _service = service;
     }
 
     [HttpPost("/api/evacuation-zones")]
-    public IActionResult AddZone([FromBody] EvacuationZone zone)
+    public IActionResult AddZone([FromBody] AddEvacuationZone zone)
     {
-      _service.AddZone(zone);
+      _service.AddZone(_mapper.Map<EvacuationZone>(zone));
       return Ok(new { Message = "Zone added successfully" });
     }
 
     [HttpPost("/api/vehicles")]
-    public IActionResult AddVehicle([FromBody] Vehicle vehicle)
+    public IActionResult AddVehicle([FromBody] AddVehicle vehicle)
     {
-      _service.AddVehicle(vehicle);
+      _service.AddVehicle(_mapper.Map<Vehicle>(vehicle));
       return Ok(new { Message = "Vehicle added successfully" });
     }
 

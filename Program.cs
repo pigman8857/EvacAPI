@@ -1,10 +1,13 @@
 using evacPlanMoni.apps.interfaces;
 using evacPlanMoni.apps.Services;
 using evacPlanMoni.infras.extentions;
+using evacPlanMoni.infras.mappers;
 using evacPlanMoni.infras.repositories;
-using evacPlanMoni.presentation.Services;
+using evacPlanMoni.presentations.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddAutoMapper(typeof(EvacuationProfile));
 
 // Use the Infrastructure Extension Method ---
 builder.Services.AddInfrastructureServices(builder.Configuration);
