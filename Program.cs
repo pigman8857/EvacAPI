@@ -13,6 +13,8 @@ var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect(redisConnectionString));
 
+builder.Services.AddScoped<IEvacuationDataRepository, InMemoryEvacuationDataRepository>();
+
 // Scoped means a new instance of the repository is created per HTTP request.
 builder.Services.AddScoped<IEvacuationStatusRepository, RedisEvacuationStatusRepository>();
 

@@ -9,25 +9,25 @@ namespace evacPlanMoni.apps.Services
 {
   public class EvacuationService : IEvacuationService
   {
-    private readonly IEvacuationStatusRepository _repository;
+    private readonly IEvacuationStatusRepository _statusRepository;
     private readonly ILogger<EvacuationService> _logger;
 
-    // In-memory stores for base data (in a real app, this would be a DB like SQL Server or CosmosDB)
-    private static readonly List<EvacuationZone> Zones = new();
-    private static readonly List<Vehicle> Vehicles = new();
+    private readonly IEvacuationDataRepository _dataRepository;
 
     // Lock object for concurrency handling during planning
     private static readonly object _planningLock = new object();
 
-    public EvacuationService(IEvacuationStatusRepository repository, IConnectionMultiplexer redis, ILogger<EvacuationService> logger)
+    public EvacuationService(IEvacuationDataRepository dataRepository, IEvacuationStatusRepository statusRepository, IConnectionMultiplexer redis, ILogger<EvacuationService> logger)
     {
-      _repository = repository;
+      _dataRepository = dataRepository;
+      _statusRepository = statusRepository;
       _logger = logger;
     }
 
     public void AddZone(EvacuationZone zone)
     {
-      Zones.Add(zone);
+      _dataRepository.AddZone(zone);
+
       var status = new EvacuationStatus
       {
         ZoneId = zone.ZoneId,
@@ -35,62 +35,63 @@ namespace evacPlanMoni.apps.Services
         TotalEvacuated = 0
       };
 
-      // Use repository instead of direct Redis calls
-      _repository.SaveStatus(status);
+      _statusRepository.SaveStatus(status);
       _logger.LogInformation($"Zone {zone.ZoneId} added.");
     }
 
-    public void AddVehicle(Vehicle vehicle) => Vehicles.Add(vehicle);
+    public void AddVehicle(Vehicle vehicle)
+    {
+      _dataRepository.AddVehicle(vehicle);
+      _logger.LogInformation($"Vehicle {vehicle.VehicleId} added.");
+    }
 
     public List<EvacuationPlan> GeneratePlan()
     {
-      lock (_planningLock) // Concurrency: Prevent simultaneous conflicting plans
+      lock (_planningLock)
       {
         var plans = new List<EvacuationPlan>();
-        var currentStatuses = GetAllStatuses();
 
-        // 1. Urgency Priority: Sort zones by Urgency (Highest first)
-        var prioritizedZones = Zones
-            .OrderByDescending(z => z.UrgencyLevel)
-            .ToList();
+        var allZones = _dataRepository.GetAllZones();
+        var currentStatuses = _statusRepository.GetAllStatuses(allZones.Select(z => z.ZoneId));
+
+        var prioritizedZones = allZones.OrderByDescending(z => z.UrgencyLevel).ToList();
 
         foreach (var zone in prioritizedZones)
         {
           var status = currentStatuses.FirstOrDefault(s => s.ZoneId == zone.ZoneId);
           if (status == null || status.RemainingPeople <= 0) continue;
 
-          // 2. Capacity & Distance Optimization
-          var availableVehicles = Vehicles.Where(v => v.IsAvailable).ToList();
+          var availableVehicles = _dataRepository.GetAllVehicles().Where(v => v.IsAvailable).ToList();
           if (!availableVehicles.Any())
           {
             _logger.LogWarning("No available vehicles to handle remaining zones.");
-            break; // No vehicles left
+            break;
           }
 
-          // Sort vehicles: First by capacity that can best handle the crowd, then by closest distance
           var bestVehicle = availableVehicles
-              .OrderByDescending(v => v.Capacity >= status.RemainingPeople ? 1 : 0) // Prefer vehicles that can take everyone
-              .ThenByDescending(v => v.Capacity) // Otherwise, get the biggest vehicle
+              .OrderByDescending(v => v.Capacity >= status.RemainingPeople ? 1 : 0)
+              .ThenByDescending(v => v.Capacity)
               .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
               .First();
 
           var distance = GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, bestVehicle.Latitude, bestVehicle.Longitude);
-          var eta = distance / bestVehicle.Speed; // Time = Distance / Speed
+          var eta = distance / bestVehicle.Speed;
 
           var peopleToTake = Math.Min(status.RemainingPeople, bestVehicle.Capacity);
 
-          var plan = new EvacuationPlan
+          plans.Add(new EvacuationPlan
           {
             ZoneId = zone.ZoneId,
             VehicleId = bestVehicle.VehicleId,
             ETAHours = Math.Round(eta, 2),
             PeopleToEvacuate = peopleToTake
-          };
+          });
 
-          plans.Add(plan);
-          bestVehicle.IsAvailable = false; // Mark as dispatched
+          // Update vehicle availability via the repository
+          bestVehicle.IsAvailable = false;
+          _dataRepository.UpdateVehicle(bestVehicle);
 
-          _logger.LogInformation($"Assigned {bestVehicle.VehicleId} to {zone.ZoneId}. ETA: {plan.ETAHours}h. Evacuating: {peopleToTake}");
+          _logger.LogInformation($"Assigned {bestVehicle.VehicleId} to {zone.ZoneId}. ETA: {Math.Round(eta, 2)}h.");
         }
         return plans;
       }
@@ -98,7 +99,7 @@ namespace evacPlanMoni.apps.Services
 
     public void UpdateEvacuation(string zoneId, int evacuatedCount, string vehicleId)
     {
-      var status = _repository.GetStatus(zoneId);
+      var status = _statusRepository.GetStatus(zoneId);
       if (status != null)
       {
         status.TotalEvacuated += evacuatedCount;
@@ -106,25 +107,36 @@ namespace evacPlanMoni.apps.Services
         if (status.RemainingPeople < 0) status.RemainingPeople = 0;
         status.LastVehicleUsed = vehicleId;
 
-        _repository.SaveStatus(status);
+        _statusRepository.SaveStatus(status);
 
-        var vehicle = Vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
-        if (vehicle != null) vehicle.IsAvailable = true;
+        // Free up the vehicle via the repository
+        var vehicle = _dataRepository.GetVehicle(vehicleId);
+        if (vehicle != null)
+        {
+          vehicle.IsAvailable = true;
+          _dataRepository.UpdateVehicle(vehicle);
+        }
+
+        _logger.LogInformation($"Updated Zone {zoneId}. Remaining: {status.RemainingPeople}");
       }
     }
 
     public void ClearData()
     {
-      Zones.Clear();
-      Vehicles.Clear();
-      _repository.ClearAllDatabase();
+      _dataRepository.ClearData();
+      _statusRepository.ClearAllDatabase();
     }
 
-    // --- Redis Helpers ---
     public List<EvacuationStatus> GetAllStatuses()
     {
-      var zoneIds = Zones.Select(z => z.ZoneId);
-      return _repository.GetAllStatuses(zoneIds);
+      // 1. Get the zones from the new Data Repository instead of the static list
+      var allZones = _dataRepository.GetAllZones();
+
+      // 2. Extract just the IDs
+      var zoneIds = allZones.Select(z => z.ZoneId);
+
+      // 3. Fetch the statuses from the Status Repository (which handles the Redis logic)
+      return _statusRepository.GetAllStatuses(zoneIds);
     }
 
   }
