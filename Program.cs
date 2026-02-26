@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Scoped means a new instance of the repository is created per HTTP request.
-builder.Services.AddScoped<IEvacuationDataRepository, InMemoryEvacuationDataRepository>();
+builder.Services.AddScoped<IEvacuationDataRepository, PostgresEvacuationDataRepository>();
 builder.Services.AddScoped<IEvacuationStatusRepository, RedisEvacuationStatusRepository>();
 // Add services to the container.
 builder.Services.AddScoped<IEvacuationService, EvacuationService>();

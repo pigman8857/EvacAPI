@@ -26,7 +26,7 @@ namespace evacPlanMoni.infras.extentions
 
       // 3. Configure PostgreSQL Connection (Scoped via EF Core)
       // Assuming you have an ApplicationDbContext for your Data Access Layer
-      services.AddDbContext<ApplicationDbContext>((sp, options) =>
+      services.AddDbContext<EvacuationDbContext>((sp, options) =>
       {
         var dbOptions = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
         options.UseNpgsql(dbOptions.PostgresConnection);
