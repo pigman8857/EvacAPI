@@ -25,7 +25,7 @@ namespace evacPlanMoni.infras.extentions
       });
 
       // 3. Configure PostgreSQL Connection (Scoped via EF Core)
-      // Assuming you have an ApplicationDbContext for your Data Access Layer
+      // Assuming an ApplicationDbContext for Data Access Layer
       services.AddDbContext<EvacuationDbContext>((sp, options) =>
       {
         var dbOptions = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
