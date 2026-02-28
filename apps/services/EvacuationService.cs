@@ -10,14 +10,10 @@ namespace evacPlanMoni.apps.Services
   {
     // I got `CS1996 - Cannot await in the body of a lock statement` when i tried changed all method to async
     // and changed methods in IEvacuationStatusRepository and IEvacuationDataRepository to async
-    // From this article blog => https://medium.com/@tyschenk20/mixing-traditional-locks-with-async-code-in-c-27431f857e01
+    // Refer from these resources: 
 
-    // #### Deadlock Risks
-    // Using locks with asynchronous code can easily lead to deadlocks. 
-    // This happens when an async method holds onto a lock and then yields control with an await. 
-    // If another part of your application tries to get the same lock while the first method is still waiting, 
-    // and that first method needs to run again to finish its work, 
-    // it will get stuck waiting forever for the lock to be freed.
+    // https://medium.com/@tyschenk20/mixing-traditional-locks-with-async-code-in-c-27431f857e01
+    // https://www.rocksolidknowledge.com/articles/locking-asyncawait
 
     // I have to remove lock() {} block and using SemaphoreSlim instead.
     //  The (1, 1) means only 1 thread can access the resource at a time, exactly like a standard lock.
