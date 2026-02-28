@@ -15,52 +15,58 @@ namespace evacPlanMoni.infras.repositories
       _context = context;
     }
 
-    public void AddZone(EvacuationZone zone)
+    public async Task AddZone(EvacuationZone zone)
     {
       _context.EvacuationZones.Add(zone);
-      _context.SaveChanges(); // Commits the insert to PostgreSQL
+      await _context.SaveChangesAsync(); // Commits the insert to PostgreSQL
     }
 
-    public IEnumerable<EvacuationZone> GetAllZones()
+    public async Task<IEnumerable<EvacuationZone>> GetAllZones()
     {
       // AsNoTracking() is a performance boost for read-only operations
-      return _context.EvacuationZones.AsNoTracking().ToList();
+      return await _context.EvacuationZones.AsNoTracking().ToListAsync();
     }
 
-    public void AddVehicle(Vehicle vehicle)
+    public async Task AddVehicle(Vehicle vehicle)
     {
       _context.Vehicles.Add(vehicle);
-      _context.SaveChanges();
+      await _context.SaveChangesAsync();
     }
 
-    public IEnumerable<Vehicle> GetAllVehicles()
+    public async Task<IEnumerable<Vehicle>> GetAllVehicles()
     {
       return _context.Vehicles.AsNoTracking().ToList();
     }
 
-    public Vehicle GetVehicle(string vehicleId)
+    public async Task<Vehicle?> GetVehicle(string vehicleId)
     {
-      return _context.Vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
+      return await _context.Vehicles.FirstOrDefaultAsync(v => v.VehicleId == vehicleId);
     }
 
-    public void UpdateVehicle(Vehicle vehicle)
+    public async Task UpdateVehicle(Vehicle vehicle)
     {
       // EF Core tracks the entity, so we just call Update and SaveChanges
       _context.Vehicles.Update(vehicle);
-      _context.SaveChanges();
+      await _context.SaveChangesAsync();
     }
 
-    public void ClearData()
+    public async Task ClearData()
     {
-      // Clears all records from both tables. 
-      // If you are using EF Core 7.0 or newer, ExecuteDelete() is the most efficient way to do bulk deletes.
-      _context.EvacuationZones.ExecuteDelete();
-      _context.Vehicles.ExecuteDelete();
 
-      // Note: If you are on EF Core 6 or older, use this instead:
-      // _context.EvacuationZones.RemoveRange(_context.EvacuationZones);
-      // _context.Vehicles.RemoveRange(_context.Vehicles);
-      // _context.SaveChanges();
+      // ExecuteDelete performs a single, highly efficient database-level 
+      // DELETE operation without loading entities into memory, 
+      // whereas RemoveRange loads all entities into memory 
+      // first and then issues a separate DELETE statement for each entity 
+
+      // Clears all records from both tables. 
+      // EF Core 7.0
+      await _context.EvacuationZones.ExecuteDeleteAsync();
+      await _context.Vehicles.ExecuteDeleteAsync();
+
+      // Note:EF Core 6 or older
+      // await _context.EvacuationZones.RemoveRangeAsync(_context.EvacuationZones);
+      // await _context.Vehicles.RemoveRangeAsync(_context.Vehicles);
+      // await _context.SaveChangesAsync();
     }
   }
 }

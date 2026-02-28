@@ -3,19 +3,33 @@ using evacPlanMoni.apps.interfaces;
 using evacPlanMoni.entities;
 using evacPlanMoni.presentations.Services;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace evacPlanMoni.apps.Services
 {
   public class EvacuationService : IEvacuationService
   {
+    // I got `CS1996 - Cannot await in the body of a lock statement` when i tried changed all method to async
+    // and changed methods in IEvacuationStatusRepository and IEvacuationDataRepository to async
+    // From this article blog => https://medium.com/@tyschenk20/mixing-traditional-locks-with-async-code-in-c-27431f857e01
+
+    // #### Deadlock Risks
+    // Using locks with asynchronous code can easily lead to deadlocks. 
+    // This happens when an async method holds onto a lock and then yields control with an await. 
+    // If another part of your application tries to get the same lock while the first method is still waiting, 
+    // and that first method needs to run again to finish its work, 
+    // it will get stuck waiting forever for the lock to be freed.
+
+    // I have to remove lock() {} block and using SemaphoreSlim instead.
+    //  The (1, 1) means only 1 thread can access the resource at a time, exactly like a standard lock.
+    private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    // Lock object for concurrency handling during planning
+    //private static readonly object _planningLock = new object();
     private readonly IEvacuationStatusRepository _statusRepository;
     private readonly ILogger<EvacuationService> _logger;
 
     private readonly IEvacuationDataRepository _dataRepository;
 
-    // Lock object for concurrency handling during planning
-    private static readonly object _planningLock = new object();
+
 
     public EvacuationService(IEvacuationDataRepository dataRepository, IEvacuationStatusRepository statusRepository, IConnectionMultiplexer redis, ILogger<EvacuationService> logger)
     {
@@ -24,9 +38,9 @@ namespace evacPlanMoni.apps.Services
       _logger = logger;
     }
 
-    public void AddZone(EvacuationZone zone)
+    public async Task AddZone(EvacuationZone zone)
     {
-      _dataRepository.AddZone(zone);
+      await _dataRepository.AddZone(zone);
 
       var status = new EvacuationStatus
       {
@@ -35,24 +49,26 @@ namespace evacPlanMoni.apps.Services
         TotalEvacuated = 0
       };
 
-      _statusRepository.SaveStatus(status);
+      await _statusRepository.SaveStatusAsync(status);
       _logger.LogInformation($"Zone {zone.ZoneId} added.");
     }
 
-    public void AddVehicle(Vehicle vehicle)
+    public async Task AddVehicle(Vehicle vehicle)
     {
-      _dataRepository.AddVehicle(vehicle);
+      await _dataRepository.AddVehicle(vehicle);
       _logger.LogInformation($"Vehicle {vehicle.VehicleId} added.");
     }
 
-    public List<EvacuationPlan> GeneratePlan()
+    public async Task<List<EvacuationPlan>> GeneratePlan()
     {
-      lock (_planningLock)
+      await _semaphore.WaitAsync();
+      // lock (_planningLock)
+      try
       {
         var plans = new List<EvacuationPlan>();
 
-        var allZones = _dataRepository.GetAllZones();
-        var currentStatuses = _statusRepository.GetAllStatuses(allZones.Select(z => z.ZoneId));
+        var allZones = await _dataRepository.GetAllZones();
+        var currentStatuses = await _statusRepository.GetAllStatusesAsync(allZones.Select(z => z.ZoneId));
 
         var prioritizedZones = allZones.OrderByDescending(z => z.UrgencyLevel).ToList();
 
@@ -61,7 +77,7 @@ namespace evacPlanMoni.apps.Services
           var status = currentStatuses.FirstOrDefault(s => s.ZoneId == zone.ZoneId);
           if (status == null || status.RemainingPeople <= 0) continue;
 
-          var availableVehicles = _dataRepository.GetAllVehicles().Where(v => v.IsAvailable).ToList();
+          var availableVehicles = (await _dataRepository.GetAllVehicles()).Where(v => v.IsAvailable).ToList();
           if (!availableVehicles.Any())
           {
             _logger.LogWarning("No available vehicles to handle remaining zones.");
@@ -89,17 +105,26 @@ namespace evacPlanMoni.apps.Services
 
           // Update vehicle availability via the repository
           bestVehicle.IsAvailable = false;
-          _dataRepository.UpdateVehicle(bestVehicle);
+          await _dataRepository.UpdateVehicle(bestVehicle);
 
           _logger.LogInformation($"Assigned {bestVehicle.VehicleId} to {zone.ZoneId}. ETA: {Math.Round(eta, 2)}h.");
         }
         return plans;
       }
+      finally
+      {
+        // CRITICAL: Always release the semaphore in a finally block so API won't get permanently locked. 
+        _semaphore.Release();
+      }
     }
 
-    public void UpdateEvacuation(string zoneId, int evacuatedCount, string vehicleId)
+    public async Task UpdateEvacuation(string zoneId, int evacuatedCount, string vehicleId)
     {
-      var status = _statusRepository.GetStatus(zoneId);
+      var status = await _statusRepository.GetStatusAsync(zoneId);
+
+      // We can check if status is null then we logged and then leave by returning or throwing 
+      // but we will let it be.
+
       if (status != null)
       {
         status.TotalEvacuated += evacuatedCount;
@@ -107,36 +132,36 @@ namespace evacPlanMoni.apps.Services
         if (status.RemainingPeople < 0) status.RemainingPeople = 0;
         status.LastVehicleUsed = vehicleId;
 
-        _statusRepository.SaveStatus(status);
+        await _statusRepository.SaveStatusAsync(status);
 
         // Free up the vehicle via the repository
-        var vehicle = _dataRepository.GetVehicle(vehicleId);
+        var vehicle = await _dataRepository.GetVehicle(vehicleId);
         if (vehicle != null)
         {
           vehicle.IsAvailable = true;
-          _dataRepository.UpdateVehicle(vehicle);
+          await _dataRepository.UpdateVehicle(vehicle);
         }
 
         _logger.LogInformation($"Updated Zone {zoneId}. Remaining: {status.RemainingPeople}");
       }
     }
 
-    public void ClearData()
+    public async Task ClearData()
     {
-      _dataRepository.ClearData();
-      _statusRepository.ClearAllDatabase();
+      await _dataRepository.ClearData();
+      await _statusRepository.ClearAllDatabaseAsync();
     }
 
-    public List<EvacuationStatus> GetAllStatuses()
+    public async Task<List<EvacuationStatus>> GetAllStatuses()
     {
-      // 1. Get the zones from the new Data Repository instead of the static list
-      var allZones = _dataRepository.GetAllZones();
+      // Get the zones from the new Data Repository instead of the static list
+      var allZones = await _dataRepository.GetAllZones();
 
-      // 2. Extract just the IDs
+      // Extract just the IDs
       var zoneIds = allZones.Select(z => z.ZoneId);
 
-      // 3. Fetch the statuses from the Status Repository (which handles the Redis logic)
-      return _statusRepository.GetAllStatuses(zoneIds);
+      // Fetch the statuses from the Status Repository (which handles the Redis logic)
+      return await _statusRepository.GetAllStatusesAsync(zoneIds);
     }
 
   }

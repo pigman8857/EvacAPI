@@ -20,23 +20,23 @@ namespace evacPlanMoni.presentations.Controllers
     }
 
     [HttpPost("/api/evacuation-zones")]
-    public IActionResult AddZone([FromBody] AddEvacuationZoneDto zone)
+    public async Task<IActionResult> AddZone([FromBody] AddEvacuationZoneDto zone)
     {
-      _service.AddZone(_mapper.Map<EvacuationZone>(zone));
+      await _service.AddZone(_mapper.Map<EvacuationZone>(zone));
       return Ok(new { Message = "Zone added successfully" });
     }
 
     [HttpPost("/api/vehicles")]
-    public IActionResult AddVehicle([FromBody] AddVehicleDto vehicle)
+    public async Task<IActionResult> AddVehicle([FromBody] AddVehicleDto vehicle)
     {
-      _service.AddVehicle(_mapper.Map<Vehicle>(vehicle));
+      await _service.AddVehicle(_mapper.Map<Vehicle>(vehicle));
       return Ok(new { Message = "Vehicle added successfully" });
     }
 
     [HttpPost("plan")]
-    public IActionResult GeneratePlan()
+    public async Task<IActionResult> GeneratePlan()
     {
-      var plan = _service.GeneratePlan();
+      var plan = await _service.GeneratePlan();
       if (!plan.Any())
         return BadRequest(new { Message = "Cannot generate plan. Ensure zones have people and vehicles are available." });
 
@@ -44,22 +44,22 @@ namespace evacPlanMoni.presentations.Controllers
     }
 
     [HttpGet("status")]
-    public IActionResult GetStatus()
+    public async Task<IActionResult> GetStatus()
     {
-      return Ok(_service.GetAllStatuses());
+      return Ok(await _service.GetAllStatuses());
     }
 
     [HttpPut("update")]
-    public IActionResult UpdateStatus(string zoneId, int evacuatedCount, string vehicleId)
+    public async Task<IActionResult> UpdateStatus(string zoneId, int evacuatedCount, string vehicleId)
     {
-      _service.UpdateEvacuation(zoneId, evacuatedCount, vehicleId);
+      await _service.UpdateEvacuation(zoneId, evacuatedCount, vehicleId);
       return Ok(new { Message = "Status updated successfully" });
     }
 
     [HttpDelete("clear")]
-    public IActionResult Clear()
+    public async Task<IActionResult> Clear()
     {
-      _service.ClearData();
+      await _service.ClearData();
       return Ok(new { Message = "Data reset successfully" });
     }
   }
