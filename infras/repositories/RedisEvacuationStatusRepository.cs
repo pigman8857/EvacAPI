@@ -46,9 +46,32 @@ namespace evacPlanMoni.infras.repositories
 
     public async Task ClearAllDatabaseAsync()
     {
+      // #### Developer's Note ####
+      // When i searhed how to delete all redis data.
+      // I found https://oneuptime.com/blog/post/2026-01-25-redis-delete-all-keys-flushall/view
+      // but i did not test it yet via code but from CLI which worked perfectly so i assume that it should work on code as well 
+      // until after i tested again via http file.
+      // It threw an error *This operation is not available unless admin mode is enabled: FLUSHDB'*
+
+      // It seems that FlushDatabaseAsync command needs Admin right because 
+      // this is a nuke command so admin right it fail-safe.
+      // To make quick fix, usually set allowAdmin=true can be set at Connection string.
+      // But this seems ugly to me. I questioned it myself, If it is the right way to do.
+      // I am not quite profession with redis since I work with it not so frequent.
+
+      // So, i thought if there are other way around like delete key by its looking or prefix or regex or whatever.
+      // which there is an cli command redis-cli KEYS "prefix:*" | xargs redis-cli DEL
+      // that question is, can i get all key with prefix?
+      // Then there is one.
       var endpoints = _redisDb.Multiplexer.GetEndPoints();
       var server = _redisDb.Multiplexer.GetServer(endpoints.First());
-      await server.FlushDatabaseAsync();
+
+      var keys = server.Keys(pattern: "zone:*").ToArray();
+
+      if (keys.Any())
+      {
+        await _redisDb.KeyDeleteAsync(keys);
+      }
     }
   }
 }
