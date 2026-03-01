@@ -1,6 +1,46 @@
-@evacPlanMoni_HostAddress = http://localhost:5187
+@HostAddress = http://localhost:5187
 
-GET {{evacPlanMoni_HostAddress}}/weatherforecast/
+### 1. Add an Evacuation Zone
+POST {{HostAddress}}/api/evacuation-zones
+Content-Type: application/json
+
+{
+  "zoneId": "Zone-B",
+  "latitude": 13.8000,
+  "longitude": 100.5500,
+  "totalPeople": 40,
+  "urgencyLevel": 2
+}
+
+### 2. Add a Vehicle
+# Type must be "Van", "Bus", or "Boat"
+POST {{HostAddress}}/api/vehicles
+Content-Type: application/json
+
+{
+  "vehicleId": "Van-01",
+  "capacity": 15,
+  "type": "Van",
+  "latitude": 13.7500,
+  "longitude": 100.4900,
+  "speed": 80,
+  "isAvailable": true
+}
+
+### 3. Generate Evacuation Plan
+POST {{HostAddress}}/api/Evacuations/plan
 Accept: application/json
 
-###
+### 4. Get Evacuation Status
+GET {{HostAddress}}/api/Evacuations/status
+Accept: application/json
+
+### 5. Update Status
+# The API endpoint requirement does not specific that it must be body or query or params 
+# So I use query because it is simple, i don't have to create Dto at all.
+PUT {{HostAddress}}/api/Evacuations/update?zoneId=Zone-A&evacuatedCount=50&vehicleId=Bus-01
+Accept: application/json
+
+### 6. Clear Data
+DELETE {{HostAddress}}/api/Evacuations/clear
+Accept: application/json
