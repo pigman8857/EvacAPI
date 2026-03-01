@@ -22,10 +22,7 @@ namespace evacPlanMoni.apps.Services
     //private static readonly object _planningLock = new object();
     private readonly IEvacuationStatusRepository _statusRepository;
     private readonly ILogger<EvacuationService> _logger;
-
     private readonly IEvacuationDataRepository _dataRepository;
-
-
 
     public EvacuationService(IEvacuationDataRepository dataRepository, IEvacuationStatusRepository statusRepository, IConnectionMultiplexer redis, ILogger<EvacuationService> logger)
     {
