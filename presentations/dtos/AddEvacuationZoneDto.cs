@@ -11,7 +11,7 @@ public class AddEvacuationZoneDto
   [Required]
   public double Longitude { get; set; }
   [Required]
-  [MinLength(0)]
+  [Range(0, int.MaxValue, ErrorMessage = "TotalPeople must be 0 or greater.")]
   public int TotalPeople { get; set; }
   [Range(1, 5)]
   public int UrgencyLevel { get; set; } // 1 (Low) to 5 (High)
