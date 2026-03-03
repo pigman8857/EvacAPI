@@ -8,6 +8,11 @@ namespace evacPlanMoni.apps.Services
 {
   public class EvacuationService : IEvacuationService
   {
+
+    private readonly IEvacuationStatusRepository _statusRepository;
+    private readonly IEvacuationDataRepository _dataRepository;
+    private readonly ILogger<EvacuationService> _logger;
+
     // I got `CS1996 - Cannot await in the body of a lock statement` when i tried changed all method to async
     // and changed methods in IEvacuationStatusRepository and IEvacuationDataRepository to async
     // Refer from these resources: 
@@ -20,9 +25,6 @@ namespace evacPlanMoni.apps.Services
     private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     // Lock object for concurrency handling during planning
     //private static readonly object _planningLock = new object();
-    private readonly IEvacuationStatusRepository _statusRepository;
-    private readonly ILogger<EvacuationService> _logger;
-    private readonly IEvacuationDataRepository _dataRepository;
 
     public EvacuationService(IEvacuationDataRepository dataRepository, IEvacuationStatusRepository statusRepository, IConnectionMultiplexer redis, ILogger<EvacuationService> logger)
     {
