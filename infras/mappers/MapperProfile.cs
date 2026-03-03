@@ -8,8 +8,12 @@ public class EvacuationProfile : Profile
 {
   public EvacuationProfile()
   {
-    CreateMap<AddEvacuationZoneDto, EvacuationZone>();
-    CreateMap<AddVehicleDto, Vehicle>();
+    CreateMap<AddEvacuationZoneDto, EvacuationZone>()
+      .ForMember(dest => dest.Latitude, opt => opt.MapFrom(src => src.LocationCoordinates.latitude))
+      .ForMember(dest => dest.Longitude, opt => opt.MapFrom(src => src.LocationCoordinates.longitude));
+    CreateMap<AddVehicleDto, Vehicle>()
+      .ForMember(dest => dest.Latitude, opt => opt.MapFrom(src => src.LocationCoordinates.latitude))
+      .ForMember(dest => dest.Longitude, opt => opt.MapFrom(src => src.LocationCoordinates.longitude));
     // // You can also map from Entity to DTO
     // CreateMap<ProductEntity, ProductDto>();
   }

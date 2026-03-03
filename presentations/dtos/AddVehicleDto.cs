@@ -12,9 +12,7 @@ public class AddVehicleDto
   [RegularExpression("^(Van|Bus|Boat)$", ErrorMessage = "Vehicle Type must be Van, Bus, or Boat.")]
   public string Type { get; set; }
   [Required]
-  public double Latitude { get; set; }
-  [Required]
-  public double Longitude { get; set; }
+  public LocationCoordinates LocationCoordinates { get; set; }
   [Required]
   public double Speed { get; set; } // km/h
 }
