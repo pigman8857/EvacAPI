@@ -5,16 +5,16 @@ namespace evacPlanMoni.apps.interfaces
   public interface IEvacuationDataRepository
   {
     // Zone Methods
-    Task AddZone(EvacuationZone zone);
-    Task<IEnumerable<EvacuationZone>> GetAllZones();
+    Task AddZoneAsync(EvacuationZone zone);
+    Task<IEnumerable<EvacuationZone>> GetAllZonesAsync();
 
     // Vehicle Methods
-    Task AddVehicle(Vehicle vehicle);
-    Task<IEnumerable<Vehicle>> GetAllVehicles();
+    Task AddVehicleAsync(Vehicle vehicle);
+    Task<IEnumerable<Vehicle>> GetAllVehiclesAsync();
     Task<Vehicle?> GetVehicle(string vehicleId);
-    Task UpdateVehicle(Vehicle vehicle);
+    Task UpdateVehicleAsync(Vehicle vehicle);
 
     // Utility
-    Task ClearData();
+    Task ClearDataAsync();
   }
 }

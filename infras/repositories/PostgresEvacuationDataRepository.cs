@@ -15,25 +15,25 @@ namespace evacPlanMoni.infras.repositories
       _evacContext = context;
     }
 
-    public async Task AddZone(EvacuationZone zone)
+    public async Task AddZoneAsync(EvacuationZone zone)
     {
       _evacContext.EvacuationZones.Add(zone);
       await _evacContext.SaveChangesAsync(); // Commits the insert to PostgreSQL
     }
 
-    public async Task<IEnumerable<EvacuationZone>> GetAllZones()
+    public async Task<IEnumerable<EvacuationZone>> GetAllZonesAsync()
     {
       // AsNoTracking() is a performance boost for read-only operations
       return await _evacContext.EvacuationZones.AsNoTracking().ToListAsync();
     }
 
-    public async Task AddVehicle(Vehicle vehicle)
+    public async Task AddVehicleAsync(Vehicle vehicle)
     {
       _evacContext.Vehicles.Add(vehicle);
       await _evacContext.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<Vehicle>> GetAllVehicles()
+    public async Task<IEnumerable<Vehicle>> GetAllVehiclesAsync()
     {
       return _evacContext.Vehicles.AsNoTracking().ToList();
     }
@@ -43,14 +43,14 @@ namespace evacPlanMoni.infras.repositories
       return await _evacContext.Vehicles.FirstOrDefaultAsync(v => v.VehicleId == vehicleId);
     }
 
-    public async Task UpdateVehicle(Vehicle vehicle)
+    public async Task UpdateVehicleAsync(Vehicle vehicle)
     {
       // EF Core tracks the entity, so we just call Update and SaveChanges
       _evacContext.Vehicles.Update(vehicle);
       await _evacContext.SaveChangesAsync();
     }
 
-    public async Task ClearData()
+    public async Task ClearDataAsync()
     {
 
       // ExecuteDelete performs a single, highly efficient database-level 

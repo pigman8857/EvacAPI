@@ -33,7 +33,7 @@ namespace evacPlanMoni.apps.Services
 
     public async Task AddZone(EvacuationZone zone)
     {
-      await _dataRepository.AddZone(zone);
+      await _dataRepository.AddZoneAsync(zone);
 
       var status = new EvacuationStatus
       {
@@ -48,7 +48,7 @@ namespace evacPlanMoni.apps.Services
 
     public async Task AddVehicle(Vehicle vehicle)
     {
-      await _dataRepository.AddVehicle(vehicle);
+      await _dataRepository.AddVehicleAsync(vehicle);
       _logger.LogInformation($"Vehicle {vehicle.VehicleId} added.");
     }
 
@@ -60,7 +60,7 @@ namespace evacPlanMoni.apps.Services
       {
         var plans = new List<EvacuationPlan>();
 
-        var allZones = await _dataRepository.GetAllZones();
+        var allZones = await _dataRepository.GetAllZonesAsync();
         var currentStatuses = await _statusRepository.GetAllStatusesAsync(allZones.Select(z => z.ZoneId));
 
         var prioritizedZones = allZones.OrderByDescending(z => z.UrgencyLevel).ToList();
@@ -70,7 +70,7 @@ namespace evacPlanMoni.apps.Services
           var status = currentStatuses.FirstOrDefault(s => s.ZoneId == zone.ZoneId);
           if (status == null || status.RemainingPeople <= 0) continue;
 
-          var availableVehicles = (await _dataRepository.GetAllVehicles()).Where(v => v.IsAvailable).ToList();
+          var availableVehicles = (await _dataRepository.GetAllVehiclesAsync()).Where(v => v.IsAvailable).ToList();
           if (!availableVehicles.Any())
           {
             _logger.LogWarning("No available vehicles to handle remaining zones.");
@@ -98,7 +98,7 @@ namespace evacPlanMoni.apps.Services
 
           // Update vehicle availability via the repository
           bestVehicle.IsAvailable = false;
-          await _dataRepository.UpdateVehicle(bestVehicle);
+          await _dataRepository.UpdateVehicleAsync(bestVehicle);
 
           _logger.LogInformation($"Assigned {bestVehicle.VehicleId} to {zone.ZoneId}. ETA: {Math.Round(eta, 2)}h.");
         }
@@ -132,7 +132,7 @@ namespace evacPlanMoni.apps.Services
         if (vehicle != null)
         {
           vehicle.IsAvailable = true;
-          await _dataRepository.UpdateVehicle(vehicle);
+          await _dataRepository.UpdateVehicleAsync(vehicle);
         }
 
         _logger.LogInformation($"Updated Zone {zoneId}. Remaining: {status.RemainingPeople}");
@@ -141,14 +141,14 @@ namespace evacPlanMoni.apps.Services
 
     public async Task ClearData()
     {
-      await _dataRepository.ClearData();
+      await _dataRepository.ClearDataAsync();
       await _statusRepository.ClearAllDatabaseAsync();
     }
 
     public async Task<List<EvacuationStatus>> GetAllStatuses()
     {
       // Get the zones from the new Data Repository instead of the static list
-      var allZones = await _dataRepository.GetAllZones();
+      var allZones = await _dataRepository.GetAllZonesAsync();
 
       // Extract just the IDs
       var zoneIds = allZones.Select(z => z.ZoneId);
