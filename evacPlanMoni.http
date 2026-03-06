@@ -3,13 +3,14 @@
 ### Add an Evacuation Zone A
 POST {{HostAddress}}/api/evacuation-zones
 Content-Type: application/json
+
 {
   "zoneId": "Z1",
-  "LocationCoordinates": {
+  "locationCoordinates": {
     "latitude": 13.7563,
-    "longitude": 100.5018,
+    "longitude": 100.5018
   },
-  "totalPeople": 100,
+  "numberOfPeople": 100,
   "urgencyLevel": 4
 }
 
@@ -20,11 +21,11 @@ Content-Type: application/json
 
 {
   "zoneId": "Z2",
-  "LocationCoordinates": {
+  "locationCoordinates": {
     "latitude": 13.7367,
     "longitude": 100.5231
   },
-  "totalPeople": 50,
+  "numberOfPeople": 50,
   "urgencyLevel": 5
 }
 
@@ -40,11 +41,9 @@ Content-Type: application/json
     "latitude": 13.7650,
     "longitude": 100.5381
   },
-  "speed": 60,
-
+  "speed": 60
 }
 
-## "isAvailable": true
 ### Add a van 
 POST {{HostAddress}}/api/vehicles
 Content-Type: application/json
@@ -54,7 +53,7 @@ Content-Type: application/json
   "capacity": 20,
   "type": "Van",
   "LocationCoordinates": {"latitude": 13.7320,"longitude": 100.5200},
-  "speed": 50,
+  "speed": 50
 
 }
 

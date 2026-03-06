@@ -50,7 +50,7 @@ public class EvacuationZoneConfiguration : IEntityTypeConfiguration<EvacuationZo
               builder.Property(z => z.Latitude).IsRequired();
               builder.Property(z => z.Longitude).IsRequired();
 
-              builder.Property(z => z.TotalPeople)
+              builder.Property(z => z.NumberOfPeople)
                      .IsRequired();
 
               builder.Property(z => z.UrgencyLevel)
@@ -102,7 +102,7 @@ public class EvacuationPlanConfiguration : IEntityTypeConfiguration<EvacuationPl
                      .HasMaxLength(50)
                      .IsRequired();
 
-              builder.Property(p => p.ETAHours).IsRequired();
-              builder.Property(p => p.PeopleToEvacuate).IsRequired();
+              builder.Property(p => p.ETA).IsRequired();
+              builder.Property(p => p.NumberOfPeople).IsRequired();
        }
 }
