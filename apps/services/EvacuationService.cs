@@ -40,7 +40,7 @@ namespace evacPlanMoni.apps.Services
       var status = new EvacuationStatus
       {
         ZoneId = zone.ZoneId,
-        RemainingPeople = zone.TotalPeople,
+        RemainingPeople = zone.NumberOfPeople,
         TotalEvacuated = 0
       };
 
@@ -69,8 +69,8 @@ namespace evacPlanMoni.apps.Services
 
         foreach (var zone in prioritizedZones)
         {
-          var status = currentStatuses.FirstOrDefault(s => s.ZoneId == zone.ZoneId);
-          if (status == null || status.RemainingPeople <= 0) continue;
+          var zoneStatus = currentStatuses.FirstOrDefault(s => s.ZoneId == zone.ZoneId);
+          if (zoneStatus == null || zoneStatus.RemainingPeople <= 0) continue;
 
           var availableVehicles = (await _dataRepository.GetAllVehiclesAsync()).Where(v => v.IsAvailable).ToList();
           if (!availableVehicles.Any())
@@ -80,22 +80,38 @@ namespace evacPlanMoni.apps.Services
           }
 
           var bestVehicle = availableVehicles
-              .OrderByDescending(v => v.Capacity >= status.RemainingPeople ? 1 : 0)
-              .ThenByDescending(v => v.Capacity)
-              .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
-              .First();
+                .OrderByDescending(v => v.Capacity >= zoneStatus.RemainingPeople ? 1 : 0)
+                .ThenByDescending(v => v.Capacity)
+                .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
+                .First();
 
+          // ** Not use **
+          // var bestVehicle = availableVehicles
+          //   // 1. Sort by: Can this vehicle fit everyone remaining? (Prioritizes 1 trip over multiple trips)
+          //   .OrderByDescending(v => v.Capacity >= zoneStatus.RemainingPeople ? 1 : 0)
+
+          //   // 2. The Capacity Optimizer:
+          //   // If it CAN fit everyone, pick the SMALLEST vehicle that works (saves big buses for later).
+          //   // If it CANNOT fit everyone, pick the LARGEST vehicle available (moves as many as possible now).
+          //   .ThenBy(v => v.Capacity >= zoneStatus.RemainingPeople ? v.Capacity : -v.Capacity)
+
+          //   // 3. Tie-breaker: If two vehicles have the exact same capacity, pick the closest one
+          //   .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
+          //   .First();
+          // ** Not use **
+
+          //Distance is in km
           var distance = GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, bestVehicle.Latitude, bestVehicle.Longitude);
-          var eta = distance / bestVehicle.Speed;
+          var eta = distance / bestVehicle.Speed; //Speed = km/h  => eta is Hours (e.g., 0.25 hours)
 
-          var peopleToTake = Math.Min(status.RemainingPeople, bestVehicle.Capacity);
+          var peopleToTake = Math.Min(zoneStatus.RemainingPeople, bestVehicle.Capacity);
 
           plans.Add(new EvacuationPlan
           {
             ZoneId = zone.ZoneId,
             VehicleId = bestVehicle.VehicleId,
-            ETAHours = Math.Round(eta, 2),
-            PeopleToEvacuate = peopleToTake
+            ETA = ETAHelper.GetFormattedEta(Math.Round(eta, 2)),
+            NumberOfPeople = peopleToTake
           });
 
           // Update vehicle availability via the repository
