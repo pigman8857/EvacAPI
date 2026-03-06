@@ -63,62 +63,74 @@ namespace evacPlanMoni.apps.Services
         var plans = new List<EvacuationPlan>();
 
         var allZones = await _dataRepository.GetAllZonesAsync();
-        var currentStatuses = await _statusRepository.GetAllStatusesAsync(allZones.Select(z => z.ZoneId));
 
+        //Sorting base on UrgencyLevel from DB
         var prioritizedZones = allZones.OrderByDescending(z => z.UrgencyLevel).ToList();
 
+        //Current status of all zone.
+        var currentStatuses = await _statusRepository.GetAllStatusesAsync(allZones.Select(z => z.ZoneId));
+
+        //All available vehicles
+        var availableVehicles = (await _dataRepository.GetAllVehiclesAsync()).Where(v => v.IsAvailable).ToList();
+        if (!availableVehicles.Any())
+        {
+          _logger.LogWarning("No available vehicles to handle remaining zones.");
+          return plans;
+        }
+
+        //Process each zones
         foreach (var zone in prioritizedZones)
         {
+          //Get one in db and in status list. Let's see how it is going first.
           var zoneStatus = currentStatuses.FirstOrDefault(s => s.ZoneId == zone.ZoneId);
+
+          //If that zone does not exist or there is people left in the zone. Just move on to the next zone
           if (zoneStatus == null || zoneStatus.RemainingPeople <= 0) continue;
 
-          var availableVehicles = (await _dataRepository.GetAllVehiclesAsync()).Where(v => v.IsAvailable).ToList();
-          if (!availableVehicles.Any())
-          {
-            _logger.LogWarning("No available vehicles to handle remaining zones.");
-            break;
-          }
+          //hard part, the optimization
 
-          var bestVehicle = availableVehicles
-                .OrderByDescending(v => v.Capacity >= zoneStatus.RemainingPeople ? 1 : 0)
-                .ThenByDescending(v => v.Capacity)
-                .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
-                .First();
 
-          // ** Not use **
-          // var bestVehicle = availableVehicles
-          //   // 1. Sort by: Can this vehicle fit everyone remaining? (Prioritizes 1 trip over multiple trips)
-          //   .OrderByDescending(v => v.Capacity >= zoneStatus.RemainingPeople ? 1 : 0)
+          //  var bestVehicle = availableVehicles
+          // .OrderByDescending(v => v.Capacity >= zoneStatus.RemainingPeople ? 1 : 0)
+          // .ThenByDescending(v => v.Capacity)
+          // .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
+          // .First();
 
-          //   // 2. The Capacity Optimizer:
-          //   // If it CAN fit everyone, pick the SMALLEST vehicle that works (saves big buses for later).
-          //   // If it CANNOT fit everyone, pick the LARGEST vehicle available (moves as many as possible now).
-          //   .ThenBy(v => v.Capacity >= zoneStatus.RemainingPeople ? v.Capacity : -v.Capacity)
+          // Logic Check: 
+          // If the zone has 50 people, prioritize finding a single vehicle with a capacity $\ge$ 50. 
+          // If none exist, find the largest available vehicle to take the biggest chunk of people at once. 
 
-          //   // 3. Tie-breaker: If two vehicles have the exact same capacity, pick the closest one
-          //   .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
-          //   .First();
-          // ** Not use **
+          var bestVehicleLeastRemaining = availableVehicles
+                    .Where(v => v.IsAvailable)
+                    //// Prioritize vehicles that can fit everyone (True comes before False in descending order)  
+                    .OrderBy(v =>
+                      zoneStatus.RemainingPeople - v.Capacity
+                    ).First();
 
           //Distance is in km
-          var distance = GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, bestVehicle.Latitude, bestVehicle.Longitude);
-          var eta = distance / bestVehicle.Speed; //Speed = km/h  => eta is Hours (e.g., 0.25 hours)
+          var distance = GeoHelper.CalculateHaversineDistance(
+            zone.Latitude,
+            zone.Longitude,
+            bestVehicleLeastRemaining.Latitude,
+            bestVehicleLeastRemaining.Longitude);
 
-          var peopleToTake = Math.Min(zoneStatus.RemainingPeople, bestVehicle.Capacity);
+          var eta = distance / bestVehicleLeastRemaining.Speed; //Speed = km/h  => eta is Hours (e.g., 0.25 hours)
+
+          var peopleToTake = Math.Min(zoneStatus.RemainingPeople, bestVehicleLeastRemaining.Capacity);
 
           plans.Add(new EvacuationPlan
           {
             ZoneId = zone.ZoneId,
-            VehicleId = bestVehicle.VehicleId,
+            VehicleId = bestVehicleLeastRemaining.VehicleId,
             ETA = ETAHelper.GetFormattedEta(Math.Round(eta, 2)),
             NumberOfPeople = peopleToTake
           });
 
-          // Update vehicle availability via the repository
-          bestVehicle.IsAvailable = false;
-          await _dataRepository.UpdateVehicleAsync(bestVehicle);
+          // // Update vehicle availability via the repository
+          bestVehicleLeastRemaining.IsAvailable = false;
+          await _dataRepository.UpdateVehicleAsync(bestVehicleLeastRemaining);
 
-          _logger.LogInformation($"Assigned {bestVehicle.VehicleId} to {zone.ZoneId}. ETA: {Math.Round(eta, 2)}h.");
+          _logger.LogInformation($"Assigned {bestVehicleLeastRemaining.VehicleId} to {zone.ZoneId}. ETA: {Math.Round(eta, 2)}h.");
         }
         return plans;
       }
