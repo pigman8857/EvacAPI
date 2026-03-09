@@ -1,4 +1,5 @@
 using evacPlanMoni.entities;
+using evacPlanMoni.presentations.dtos;
 
 namespace evacPlanMoni.presentations.Services
 {
@@ -27,7 +28,7 @@ namespace evacPlanMoni.presentations.Services
     /// <summary>
     /// Updates the evacuation progress for a specific zone and frees up the assigned vehicle.
     /// </summary>
-    Task UpdateEvacuation(string zoneId, int evacuatedCount, string vehicleId);
+    Task UpdateEvacuation(UpdateEvacuationStatusDto updateEvacDto);//(string zoneId, int evacuatedCount, string vehicleId);
 
     /// <summary>
     /// Clears all in-memory data and flushes the Redis database.

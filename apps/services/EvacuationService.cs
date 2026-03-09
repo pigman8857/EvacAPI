@@ -1,6 +1,7 @@
 using evacPlanMoni.apps.helpers;
 using evacPlanMoni.apps.interfaces;
 using evacPlanMoni.entities;
+using evacPlanMoni.presentations.dtos;
 using evacPlanMoni.presentations.Services;
 using StackExchange.Redis;
 
@@ -141,31 +142,31 @@ namespace evacPlanMoni.apps.Services
       }
     }
 
-    public async Task UpdateEvacuation(string zoneId, int evacuatedCount, string vehicleId)
+    public async Task UpdateEvacuation(UpdateEvacuationStatusDto updateEvacStatusDto)//(string zoneId, int evacuatedCount, string vehicleId)
     {
-      var status = await _statusRepository.GetStatusAsync(zoneId);
+      var status = await _statusRepository.GetStatusAsync(updateEvacStatusDto.ZoneId);
 
       // We can check if status is null then we logged and then leave by returning or throwing 
       // but we will let it be.
 
       if (status != null)
       {
-        status.TotalEvacuated += evacuatedCount;
-        status.RemainingPeople -= evacuatedCount;
+        status.TotalEvacuated += updateEvacStatusDto.EvacuatedCount;
+        status.RemainingPeople -= updateEvacStatusDto.EvacuatedCount;
         if (status.RemainingPeople < 0) status.RemainingPeople = 0;
-        status.LastVehicleUsed = vehicleId;
+        status.LastVehicleUsed = updateEvacStatusDto.VehicleId;
 
         await _statusRepository.SaveStatusAsync(status);
 
         // Free up the vehicle via the repository
-        var vehicle = await _dataRepository.GetVehicle(vehicleId);
+        var vehicle = await _dataRepository.GetVehicle(updateEvacStatusDto.VehicleId);
         if (vehicle != null)
         {
           vehicle.IsAvailable = true;
           await _dataRepository.UpdateVehicleAsync(vehicle);
         }
 
-        _logger.LogInformation($"Updated Zone {zoneId}. Remaining: {status.RemainingPeople}");
+        _logger.LogInformation($"Updated Zone {updateEvacStatusDto.ZoneId}. Remaining: {status.RemainingPeople}");
       }
     }
 
