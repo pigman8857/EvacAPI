@@ -70,7 +70,29 @@ Accept: application/json
 # The API endpoint requirement does not specific that it must be body or query or params 
 # So I use query because it is simple, i don't have to create Dto at all.
 PUT {{HostAddress}}/api/Evacuations/update?zoneId=Zone-A&evacuatedCount=50&vehicleId=Bus-01
-Accept: application/json
+Content-Type: application/json
+
+{
+  "ZoneId": "Z1",
+  "EvacuatedCount": 20,
+  "VehicleId": "V2"
+}
+
+
+### Update Status
+# The API endpoint requirement does not specific that it must be body or query or params 
+# So I use query because it is simple, i don't have to create Dto at all.
+PUT {{HostAddress}}/api/Evacuations/update?zoneId=Zone-A&evacuatedCount=50&vehicleId=Bus-01
+Content-Type: application/json
+
+{
+  "ZoneId": "Z2",
+  "EvacuatedCount": 10,
+  "VehicleId": "V1"
+}
+
+
+
 
 ### Clear Data
 DELETE {{HostAddress}}/api/Evacuations/clear
