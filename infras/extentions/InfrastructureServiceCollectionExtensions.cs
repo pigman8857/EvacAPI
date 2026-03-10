@@ -34,5 +34,26 @@ namespace evacPlanMoni.infras.extentions
 
       return services;
     }
+
+
+    // Add this new method:
+    public static void InitializeInfrastructure(this IApplicationBuilder app)
+    {
+      using var scope = app.ApplicationServices.CreateScope();
+      var services = scope.ServiceProvider;
+
+      try
+      {
+        var context = services.GetRequiredService<EvacuationDbContext>();
+        // Applies any pending migrations, and creates the database if it doesn't exist
+        context.Database.Migrate();
+      }
+      catch (Exception ex)
+      {
+        var logger = services.GetRequiredService<ILogger<EvacuationDbContext>>();
+        logger.LogError(ex, "An error occurred while migrating the PostgreSQL database.");
+        throw; // Optional: throw if you want the app to crash if the DB can't be reached
+      }
+    }
   }
 }
