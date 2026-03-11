@@ -9,6 +9,28 @@ This project also demonstrate how to use semaphore or lock as race condition pre
 - Set the db password id docker-compose.yml first if you are testing on your local machine.
 - manage user secret PostgresConnection db password should be the same as in docker-compose
 
+# How to run
+
+After you have set up all docker container with docker compose, then run
+
+```
+//Enable Postgres and redis
+docker compose up -d
+
+// Restore nuget package
+dotnet restore
+
+// Build the app
+dotnet build -c Release
+
+// Run
+dotnet run
+```
+
+If you are using Visual Studio code like i do
+
+Then you need `C# Dev Kit` extention installed. and F5 on the project it should prompt you where to run, which you should select `C#` then `evacPlanMoni.csproj`
+
 # DB Migration command
 
 Update database with migration files
