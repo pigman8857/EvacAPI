@@ -1,3 +1,4 @@
+using evacPlanMoni.apps.Exceptions;
 using evacPlanMoni.apps.helpers;
 using evacPlanMoni.apps.interfaces;
 using evacPlanMoni.entities;
@@ -57,7 +58,11 @@ namespace evacPlanMoni.apps.Services
 
     public async Task<List<EvacuationPlan>> GeneratePlan()
     {
-      await _semaphore.WaitAsync();
+      if (!await _semaphore.WaitAsync(100))
+      {
+        throw new SemaphoreLongWaitException();
+      }
+
       // lock (_planningLock)
       try
       {
