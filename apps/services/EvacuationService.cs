@@ -95,13 +95,6 @@ namespace evacPlanMoni.apps.Services
 
           //hard part, the optimization
 
-
-          //  var bestVehicle = availableVehicles
-          // .OrderByDescending(v => v.Capacity >= zoneStatus.RemainingPeople ? 1 : 0)
-          // .ThenByDescending(v => v.Capacity)
-          // .ThenBy(v => GeoHelper.CalculateHaversineDistance(zone.Latitude, zone.Longitude, v.Latitude, v.Longitude))
-          // .First();
-
           // Logic Check: 
           // If the zone has 50 people, prioritize finding a single vehicle with a capacity $\ge$ 50. 
           // If none exist, find the largest available vehicle to take the biggest chunk of people at once. 
