@@ -28,7 +28,7 @@ namespace evacPlanMoni.apps.Services
     // Lock object for concurrency handling during planning
     //private static readonly object _planningLock = new object();
 
-    public EvacuationService(IEvacuationDataRepository dataRepository, IEvacuationStatusRepository statusRepository, IConnectionMultiplexer redis, ILogger<EvacuationService> logger)
+    public EvacuationService(IEvacuationDataRepository dataRepository, IEvacuationStatusRepository statusRepository, ILogger<EvacuationService> logger)
     {
       _dataRepository = dataRepository;
       _statusRepository = statusRepository;
