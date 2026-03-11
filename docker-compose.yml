@@ -6,8 +6,8 @@ services:
     image: postgres:15-alpine
     container_name: evacuation_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_USER: svasuvu_evac_db
+      POSTGRES_PASSWORD: your_password
       POSTGRES_DB: EvacuationDb
     ports:
       - "5432:5432" # Maps the container port to local machine
