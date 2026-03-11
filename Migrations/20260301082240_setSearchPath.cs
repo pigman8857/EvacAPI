@@ -14,7 +14,7 @@ namespace evacPlanMoni.Migrations
             // This is only for postgres. In appsettings connection string also need `SearchPath=public;`.
             migrationBuilder.Sql("ALTER DATABASE \"EvacuationDb\" SET search_path TO public, \"$user\";");
             // apply to the specific user
-            migrationBuilder.Sql("ALTER ROLE \"postgres\" SET search_path TO public, \"$user\";");
+            migrationBuilder.Sql("ALTER ROLE \"svasuvu_evac_db\" SET search_path TO public, \"$user\";");
         }
 
         /// <inheritdoc />
@@ -22,7 +22,7 @@ namespace evacPlanMoni.Migrations
         {
             //Revert
             migrationBuilder.Sql("ALTER DATABASE \"EvacuationDb\" RESET search_path;");
-            migrationBuilder.Sql("ALTER ROLE \"postgres\" RESET search_path;");
+            migrationBuilder.Sql("ALTER ROLE \"svasuvu_evac_db\" RESET search_path;");
         }
     }
 }
