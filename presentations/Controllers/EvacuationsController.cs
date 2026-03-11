@@ -50,7 +50,7 @@ namespace evacPlanMoni.presentations.Controllers
     }
 
     [HttpPut("update")]
-    public async Task<IActionResult> UpdateStatus(UpdateEvacuationStatusDto updateStatusEvacDto)//(string zoneId, int evacuatedCount, string vehicleId)
+    public async Task<IActionResult> UpdateStatus(UpdateEvacuationStatusDto updateStatusEvacDto)
     {
       await _service.UpdateEvacuation(updateStatusEvacDto);
       return Ok(new { Message = "Status updated successfully" });

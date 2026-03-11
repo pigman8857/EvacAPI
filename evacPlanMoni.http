@@ -69,7 +69,7 @@ Accept: application/json
 ### Update Status
 # The API endpoint requirement does not specific that it must be body or query or params 
 # So I use query because it is simple, i don't have to create Dto at all.
-PUT {{HostAddress}}/api/Evacuations/update?zoneId=Zone-A&evacuatedCount=50&vehicleId=Bus-01
+PUT {{HostAddress}}/api/Evacuations/update
 Content-Type: application/json
 
 {
@@ -82,7 +82,7 @@ Content-Type: application/json
 ### Update Status
 # The API endpoint requirement does not specific that it must be body or query or params 
 # So I use query because it is simple, i don't have to create Dto at all.
-PUT {{HostAddress}}/api/Evacuations/update?zoneId=Zone-A&evacuatedCount=50&vehicleId=Bus-01
+PUT {{HostAddress}}/api/Evacuations/update
 Content-Type: application/json
 
 {
